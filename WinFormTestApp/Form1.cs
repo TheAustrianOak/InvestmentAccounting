@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BusinessLayer.Services.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -12,22 +13,12 @@ namespace WinFormTestApp
 {
 	public partial class Form1 : Form
 	{
-		private List<Lot> lots;
+		private readonly IShareService shareManager;
 
-		public Form1()
+		public Form1(IShareService shareManager)
 		{
+			this.shareManager = shareManager;
 			InitializeComponent();
-			InitializeLots();
-		}
-
-		private void InitializeLots()
-		{
-			lots = new List<Lot>
-			{
-				new Lot(100, 20),
-				new Lot(150, 30),
-				new Lot(120, 10)
-			};
 		}
 
 		private void buttonCalculate_Click(object sender, EventArgs e)
@@ -41,22 +32,26 @@ namespace WinFormTestApp
 					return;
 				}
 
-				int totalAvailableShares = CalculateTotalAvailableShares();
+				int totalAvailableShares = shareManager.GetTotalAvailableShares();
 				if (sharesSold > totalAvailableShares)
 				{
 					MessageBox.Show($"You cannot sell more shares than you have available. You have {totalAvailableShares} shares available.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 					return;
 				}
 
-				int remainingShares = CalculateRemainingShares(sharesSold);
-				decimal costBasisSold = CalculateCostBasisSold(sharesSold);
-				decimal costBasisRemaining = CalculateCostBasisRemaining();
-				decimal totalProfit = CalculateTotalProfit(sharesSold, pricePerShare, costBasisSold);
+				try
+				{
+					var result = shareManager.CalculateShares(sharesSold, pricePerShare);
 
-				labelRemainingShares.Text = $"Remaining Shares: {remainingShares}";
-				labelCostBasisSold.Text = $"Cost Basis Sold: {costBasisSold:C}";
-				labelCostBasisRemaining.Text = $"Cost Basis Remaining: {costBasisRemaining:C}";
-				labelTotalProfit.Text = $"Total Profit: {totalProfit:C}";
+					labelRemainingShares.Text = $"Remaining Shares: {result.RemainingShares}";
+					labelCostBasisSold.Text = $"Cost Basis Sold: {result.CostBasisSold:C}";
+					labelCostBasisRemaining.Text = $"Cost Basis Remaining: {result.CostBasisRemaining:C}";
+					labelTotalProfit.Text = $"Total Profit: {result.TotalProfit:C}";
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
 			}
 			else
 			{
@@ -64,17 +59,12 @@ namespace WinFormTestApp
 			}
 		}
 
-		private int CalculateTotalAvailableShares()
-		{
-			return lots.Sum(lot => lot.Shares);
-		}
-
 		private void buttonAddLot_Click(object sender, EventArgs e)
 		{
 			if (int.TryParse(textBoxNewShares.Text, out int newShares) &&
 				decimal.TryParse(textBoxNewPrice.Text, out decimal newPrice))
 			{
-				lots.Add(new Lot(newShares, newPrice));
+				shareManager.AddLot(newShares, newPrice);
 				MessageBox.Show("New lot added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 				textBoxNewShares.Clear();
 				textBoxNewPrice.Clear();
@@ -82,71 +72,6 @@ namespace WinFormTestApp
 			else
 			{
 				MessageBox.Show("Please enter valid numbers for new shares and price.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-			}
-		}
-
-		private int CalculateRemainingShares(int sharesSold)
-		{
-			int totalShares = 0;
-			foreach (var lot in lots)
-			{
-				totalShares += lot.Shares;
-			}
-			return totalShares - sharesSold;
-		}
-
-		private decimal CalculateCostBasisSold(int sharesSold)
-		{
-			int sharesToSell = sharesSold;
-			decimal totalCost = 0;
-
-			foreach (var lot in lots)
-			{
-				if (sharesToSell <= lot.Shares)
-				{
-					totalCost += sharesToSell * lot.Price;
-					lot.Shares -= sharesToSell;
-					break;
-				}
-				else
-				{
-					totalCost += lot.Shares * lot.Price;
-					sharesToSell -= lot.Shares;
-					lot.Shares = 0;
-				}
-			}
-
-			return totalCost / sharesSold;
-		}
-
-		private decimal CalculateCostBasisRemaining()
-		{
-			int totalShares = 0;
-			decimal totalCost = 0;
-
-			foreach (var lot in lots)
-			{
-				totalShares += lot.Shares;
-				totalCost += lot.Shares * lot.Price;
-			}
-
-			return totalShares > 0 ? totalCost / totalShares : 0;
-		}
-
-		private decimal CalculateTotalProfit(int sharesSold, decimal pricePerShare, decimal costBasisSold)
-		{
-			return sharesSold * (pricePerShare - costBasisSold);
-		}
-
-		private class Lot
-		{
-			public int Shares { get; set; }
-			public decimal Price { get; }
-
-			public Lot(int shares, decimal price)
-			{
-				Shares = shares;
-				Price = price;
 			}
 		}
 

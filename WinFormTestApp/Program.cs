@@ -1,8 +1,12 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DataLayer;
+using BusinessLayer.Services;
+using BusinessLayer.Services.Abstractions;
 
 namespace WinFormTestApp
 {
@@ -14,9 +18,15 @@ namespace WinFormTestApp
 		[STAThread]
 		static void Main()
 		{
+			var serviceProvider = new ServiceCollection()
+							.AddSingleton<IRepository, LotRepository>()
+							.AddSingleton<IShareService, ShareService>()
+							.BuildServiceProvider();
+
+
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
-			Application.Run(new Form1());
+			Application.Run(new Form1(serviceProvider.GetService<IShareService>()));
 		}
 	}
 }
