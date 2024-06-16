@@ -75,8 +75,8 @@
     <Compile Include="Services\ShareService.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DataAccessLayer\DataLayer.csproj">
-      <Project>{E2C0FCE7-3AEB-464E-87F7-8DA7D03E2D29}</Project>
+    <ProjectReference Include="..\DataLayer\DataLayer.csproj">
+      <Project>{bb7c7fd1-ab56-4e31-b623-2438e487a9fe}</Project>
       <Name>DataLayer</Name>
     </ProjectReference>
     <ProjectReference Include="..\Models\Models.csproj">
